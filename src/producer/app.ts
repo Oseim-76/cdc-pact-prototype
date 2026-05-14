@@ -1,7 +1,9 @@
 import express, { Application, Request, Response } from 'express';
+import cors from 'cors';
 import { Notification, NotificationResponse, HealthResponse } from '../shared/types';
 
 const app: Application = express();
+app.use(cors());
 app.use(express.json());
 
 const notifications: Notification[] = [
