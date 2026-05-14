@@ -1,12 +1,43 @@
 {
   "name": "cdc-pact-prototype",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Consumer-Driven Contract Testing prototype using Pact.js and TypeScript for DfT microservice integration",
+  "main": "dist/producer/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "ts-node src/producer/server.ts",
+    "test": "jest --coverage",
+    "test:consumer": "jest src/consumer --coverage",
+    "test:producer": "jest src/producer --coverage",
+    "test:pact:verify": "jest src/producer/provider.pact.test.ts",
+    "lint": "eslint src/**/*.ts"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "pact",
+    "contract-testing",
+    "typescript",
+    "microservices"
+  ],
+  "author": "Micheal Osei",
   "license": "ISC",
-  "description": ""
+  "dependencies": {
+    "axios": "^1.16.1",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@pact-foundation/pact": "^16.4.0",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.8.0",
+    "@types/supertest": "^7.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "eslint": "^10.3.0",
+    "jest": "^30.4.2",
+    "prettier": "^3.8.3",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
 }
