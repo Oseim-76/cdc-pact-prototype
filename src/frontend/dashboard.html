@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDC Pipeline Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1f2e;border-bottom:1px solid #2d3748;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:1.1rem;font-weight:600;color:#fff}
+.logo span{color:#667eea}
+.badge{background:#22543d;color:#9ae6b4;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:500}
+main{max-width:1200px;margin:0 auto;padding:2rem}
+.pipeline-bar{background:#1a1f2e;border:1px solid #2d3748;border-radius:12px;padding:1.5rem;margin-bottom:2rem}
+.pipeline-title{font-size:13px;font-weight:500;color:#a0aec0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+.stages{display:flex;align-items:center}
+.stage{flex:1;text-align:center}
+.stage-box{background:#1c4532;border:1px solid #276749;border-radius:8px;padding:.75rem .5rem;margin:0 4px}
+.stage-name{font-size:11px;font-weight:600;color:#9ae6b4;text-transform:uppercase;margin-bottom:4px}
+.stage-status{font-size:18px;color:#9ae6b4}
+.stage-time{font-size:10px;color:#718096;margin-top:2px}
+.arrow{color:#4a5568;font-size:20px;flex-shrink:0;padding:0 4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem}
+.card{background:#1a1f2e;border:1px solid #2d3748;border-radius:12px;padding:1.5rem}
+.card-title{font-size:13px;font-weight:500;color:#a0aec0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+.metric{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid #2d3748}
+.metric:last-child{border-bottom:none}
+.metric-label{font-size:13px;color:#cbd5e0}
+.metric-value{font-size:13px;font-weight:600;color:#9ae6b4}
+.bad{color:#feb2b2}
+.section{background:#1a1f2e;border:1px solid #2d3748;border-radius:12px;padding:1.5rem;margin-bottom:2rem}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.section-title{font-size:13px;font-weight:500;color:#a0aec0;text-transform:uppercase;letter-spacing:.05em}
+.btn{background:#2d3748;border:1px solid #4a5568;color:#e2e8f0;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer}
+.note{background:#1a365d;border:1px solid #2b6cb0;border-radius:8px;padding:1rem;margin-bottom:1rem;font-size:12px;color:#90cdf4}
+.err{background:#742a2a;border:1px solid #9b2c2c;border-radius:8px;padding:1rem;margin-bottom:1rem;font-size:13px;color:#feb2b2;display:none}
+.notif-card{background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:1rem 1.25rem;margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:flex-start}
+.notif-id{font-size:11px;color:#718096;margin-bottom:4px}
+.notif-case{font-size:14px;font-weight:500;color:#e2e8f0;margin-bottom:4px}
+.notif-meta{font-size:12px;color:#718096}
+.type-badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px}
+.CASE_UPDATED{background:#1a365d;color:#90cdf4}
+.CASE_CREATED{background:#1c4532;color:#9ae6b4}
+.CASE_CLOSED{background:#322659;color:#d6bcfa}
+.contract-row{display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid #2d3748;font-size:13px}
+.contract-row:last-child{border-bottom:none}
+.contract-name{color:#cbd5e0;font-family:monospace}
+.verified{color:#9ae6b4;font-weight:500}
+.violated{color:#feb2b2;font-weight:500}
+footer{text-align:center;padding:2rem;font-size:12px;color:#4a5568;border-top:1px solid #2d3748;margin-top:1rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">CDC Pipeline <span>Dashboard</span> &mdash; DfT Notification Service</div>
+  <div class="badge">&#9679; PIPELINE HEALTHY</div>
+</header>
+<main>
+  <div class="pipeline-bar">
+    <div class="pipeline-title">CI Pipeline Stages</div>
+    <div class="stages">
+      <div class="stage"><div class="stage-box"><div class="stage-name">Lint</div><div class="stage-status">&#10003;</div><div class="stage-time">~8s</div></div></div>
+      <div class="arrow">&#8594;</div>
+      <div class="stage"><div class="stage-box"><div class="stage-name">Security</div><div class="stage-status">&#10003;</div><div class="stage-time">~12s</div></div></div>
+      <div class="arrow">&#8594;</div>
+      <div class="stage"><div class="stage-box"><div class="stage-name">Unit Tests</div><div class="stage-status">&#10003;</div><div class="stage-time">~18s</div></div></div>
+      <div class="arrow">&#8594;</div>
+      <div class="stage"><div class="stage-box"><div class="stage-name">Contracts</div><div class="stage-status">&#10003;</div><div class="stage-time">~24s</div></div></div>
+      <div class="arrow">&#8594;</div>
+      <div class="stage"><div class="stage-box"><div class="stage-name">Verification</div><div class="stage-status">&#10003;</div><div class="stage-time">~31s</div></div></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Quality Metrics</div>
+      <div class="metric"><span class="metric-label">Statement coverage</span><span class="metric-value">100%</span></div>
+      <div class="metric"><span class="metric-label">Function coverage</span><span class="metric-value">100%</span></div>
+      <div class="metric"><span class="metric-label">Producer unit tests</span><span class="metric-value">5 / 5 passing</span></div>
+      <div class="metric"><span class="metric-label">Consumer pact tests</span><span class="metric-value">4 / 4 passing</span></div>
+      <div class="metric"><span class="metric-label">Provider verifications</span><span class="metric-value">4 / 4 passing</span></div>
+      <div class="metric"><span class="metric-label">npm vulnerabilities</span><span class="metric-value">0 found</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">CDC Impact Metrics</div>
+      <div class="metric"><span class="metric-label">Breaking changes caught pre-merge</span><span class="metric-value">1 / 1 (100%)</span></div>
+      <div class="metric"><span class="metric-label">Detection time (baseline E2E)</span><span class="metric-value bad">~3 days</span></div>
+      <div class="metric"><span class="metric-label">Detection time (with CDC)</span><span class="metric-value">&lt; 10 min</span></div>
+      <div class="metric"><span class="metric-label">Endpoints under contract</span><span class="metric-value">3 / 3 (100%)</span></div>
+      <div class="metric"><span class="metric-label">Contract spec version</span><span class="metric-value">Pact v3.0.0</span></div>
+      <div class="metric"><span class="metric-label">OpenAPI spec version</span><span class="metric-value">v1.0.0</span></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Live Notifications &mdash; Producer API</div>
+      <button class="btn" onclick="fetchNotifications()">&#8635; Refresh</button>
+    </div>
+    <div class="note">To see live data: run <strong>npm start</strong> in your terminal (port 3001), then click Refresh.</div>
+    <div id="err" class="err">Producer API not reachable &mdash; showing mock data. Run: npm start</div>
+    <div id="list"><p style="color:#718096;font-size:14px;padding:1rem 0">Loading...</p></div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Contract Status &mdash; NotificationConsumer &#8594; NotificationProducer</div>
+    </div>
+    <div class="contract-row"><span class="contract-name">GET /api/v1/notifications</span><span class="verified">&#10003; Verified</span></div>
+    <div class="contract-row"><span class="contract-name">GET /api/v1/notifications/:id</span><span class="verified">&#10003; Verified</span></div>
+    <div class="contract-row"><span class="contract-name">GET /api/v1/notifications/notif-999 (404)</span><span class="verified">&#10003; Verified</span></div>
+    <div class="contract-row"><span class="contract-name">GET /health</span><span class="verified">&#10003; Verified</span></div>
+    <div class="contract-row"><span class="contract-name">Breaking change &mdash; caseId + status removed</span><span class="violated">&#10007; Caught by CDC</span></div>
+  </div>
+</main>
+<footer>CDC Pact Prototype &middot; Micheal Osei &middot; Capgemini DfT &middot; Sheffield Hallam University EPA 2026</footer>
+<script>
+const MOCK=[
+  {id:"notif-001",type:"CASE_UPDATED",caseId:"DFT-2024-001",status:"IN_PROGRESS",timestamp:"2024-01-15T10:30:00Z",metadata:{source:"dynamics-365",version:"1.0.0"}},
+  {id:"notif-002",type:"CASE_CREATED",caseId:"DFT-2024-002",status:"OPEN",timestamp:"2024-01-15T11:00:00Z",metadata:{source:"dynamics-365",version:"1.0.0"}}
+];
+function render(data){
+  document.getElementById("list").innerHTML=data.map(n=>
+    '<div class="notif-card"><div><div class="notif-id">'+n.id+' &middot; '+n.metadata.source+' v'+n.metadata.version+'</div>'+
+    '<div class="notif-case">Case: '+n.caseId+'</div>'+
+    '<div class="notif-meta">Status: '+n.status+' &middot; '+new Date(n.timestamp).toLocaleString()+'</div></div>'+
+    '<span class="type-badge '+n.type+'">'+n.type+'</span></div>'
+  ).join("");
+}
+async function fetchNotifications(){
+  try{
+    const r=await fetch("http://localhost:3001/api/v1/notifications",{headers:{Accept:"application/json"}});
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+    document.getElementById("err").style.display="none";
+    render(d.notifications);
+  }catch(e){
+    document.getElementById("err").style.display="block";
+    render(MOCK);
+  }
+}
+fetchNotifications();
+</script>
+</body>
+</html>
