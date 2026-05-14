@@ -1,7 +1,8 @@
-import path from 'path';
 import { Verifier } from '@pact-foundation/pact';
 import { app } from './app';
 import { Server } from 'http';
+
+const PACT_BROKER_URL = process.env.PACT_BROKER_URL || 'http://localhost:9292';
 
 describe('Pact Provider Verification', () => {
   let server: Server;
@@ -20,30 +21,22 @@ describe('Pact Provider Verification', () => {
     server.close(done);
   });
 
-  it('should validate the expectations of the NotificationConsumer', async () => {
+  it('should validate the expectations of NotificationConsumer from Pact Broker', async () => {
     const verifier = new Verifier({
       provider: 'NotificationProducer',
       providerBaseUrl: `http://localhost:${port}`,
-      pactUrls: [
-        path.resolve(
-          process.cwd(),
-          'pacts',
-          'NotificationConsumer-NotificationProducer.json'
-        ),
+      pactBrokerUrl: PACT_BROKER_URL,
+      consumerVersionSelectors: [
+        { tag: 'main', latest: true }
       ],
+      publishVerificationResult: true,
+      providerVersion: '1.0.0',
+      providerVersionTags: ['main'],
       stateHandlers: {
-        'notifications exist': async () => {
-          // Default state - notifications already seeded in app.ts
-        },
-        'notification notif-001 exists': async () => {
-          // Default state - notif-001 already seeded in app.ts
-        },
-        'notification notif-999 does not exist': async () => {
-          // Default state - notif-999 not in seed data
-        },
-        'producer is running': async () => {
-          // Default state - server is running
-        },
+        'notifications exist': async () => {},
+        'notification notif-001 exists': async () => {},
+        'notification notif-999 does not exist': async () => {},
+        'producer is running': async () => {},
       },
       logLevel: 'warn',
     });
