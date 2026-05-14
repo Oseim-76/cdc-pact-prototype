@@ -1,0 +1,181 @@
+openapi: 3.0.3
+info:
+  title: Notification Producer API
+  description: |
+    RESTful API for the DfT Case Notification service. This specification serves as the 
+    canonical interface description for consumer-driven contract testing using Pact.js.
+    All consumers must derive their Pact contracts from this specification.
+  version: 1.0.0
+  contact:
+    name: Micheal Osei - Capgemini DfT Delivery Team
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+  - url: https://api.dft-notifications.capgemini.com/v1
+    description: Production (DfT estate - out of scope for prototype)
+
+tags:
+  - name: notifications
+    description: Case notification operations
+  - name: health
+    description: Service health and readiness
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Health check
+      description: Returns the current health status of the Notification Producer service.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: UP
+                version: 1.0.0
+                timestamp: '2024-01-15T10:30:00Z'
+
+  /api/v1/notifications:
+    get:
+      tags: [notifications]
+      summary: List all notifications
+      description: |
+        Returns a paginated list of case notifications from the DfT Dynamics 365 estate.
+        Consumers must not depend on field ordering. New optional fields may be added
+        in minor versions without constituting a breaking change.
+      operationId: listNotifications
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/notifications/{id}:
+    get:
+      tags: [notifications]
+      summary: Get notification by ID
+      description: Returns a single notification by its unique identifier.
+      operationId: getNotificationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique notification identifier
+          schema:
+            type: string
+            example: notif-001
+      responses:
+        '200':
+          description: Notification found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Notification not found
+
+components:
+  schemas:
+    Notification:
+      type: object
+      required: [id, type, caseId, status, timestamp, metadata]
+      properties:
+        id:
+          type: string
+          description: Unique notification identifier
+          example: notif-001
+        type:
+          type: string
+          enum: [CASE_UPDATED, CASE_CREATED, CASE_CLOSED]
+          description: Type of case event that triggered the notification
+          example: CASE_UPDATED
+        caseId:
+          type: string
+          description: DfT case reference number
+          example: DFT-2024-001
+        status:
+          type: string
+          description: Current status of the case
+          example: IN_PROGRESS
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when the notification was created
+          example: '2024-01-15T10:30:00Z'
+        metadata:
+          $ref: '#/components/schemas/NotificationMetadata'
+
+    NotificationMetadata:
+      type: object
+      required: [source, version]
+      properties:
+        source:
+          type: string
+          description: System that generated the notification
+          example: dynamics-365
+        version:
+          type: string
+          description: API version that produced this notification
+          example: 1.0.0
+
+    NotificationListResponse:
+      type: object
+      required: [notifications, total, page]
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        total:
+          type: integer
+          description: Total number of notifications
+          example: 2
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+
+    HealthResponse:
+      type: object
+      required: [status, version, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN]
+          example: UP
+        version:
+          type: string
+          example: 1.0.0
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: Notification not found
