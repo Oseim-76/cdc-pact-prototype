@@ -12,7 +12,8 @@
     "test:pact:verify": "jest src/producer/provider.pact.test.ts",
     "lint": "eslint src/**/*.ts",
     "start:consumer": "ts-node src/consumer/server.ts",
-    "test:all": "jest --coverage"
+    "test:all": "jest --coverage",
+    "test:integration": "jest src/integration --no-coverage --testTimeout=15000"
   },
   "keywords": [
     "pact",
