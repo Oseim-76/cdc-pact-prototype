@@ -25,7 +25,7 @@ describe('Pact Provider Verification', () => {
   });
 
   it('should validate the expectations of NotificationConsumer', async () => {
-    const verifierOptions: any = {
+    const verifierOptions = {
       provider: 'NotificationProducer',
       providerBaseUrl: `http://localhost:${port}`,
       stateHandlers: {

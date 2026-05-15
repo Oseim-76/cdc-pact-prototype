@@ -121,7 +121,7 @@ describe('Notification Consumer Pact Tests', () => {
               `${mockServer.url}/api/v1/notifications/notif-999`,
               { headers: { Accept: 'application/json' } }
             );
-          } catch (error: any) {
+          } catch (error) {
             expect(error.response.status).toBe(404);
             expect(error.response.data.error).toBeDefined();
           }

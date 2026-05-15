@@ -93,8 +93,8 @@ describe('Consumer API', () => {
     });
 
     it('returns 404 when producer returns 404', async () => {
-      const err: any = new Error('Not found');
-      err.response = { status: 404 };
+      const err = Object.assign(new Error('Not found'), { response: { status: 404 } });
+      // response already set above
       MockedClient.prototype.getNotificationById.mockRejectedValue(err);
 
       const app = createConsumerApp();
