@@ -7,10 +7,12 @@
     "build": "tsc",
     "start": "ts-node src/producer/server.ts",
     "test": "jest --coverage",
-    "test:consumer": "jest src/consumer --coverage",
+    "test:consumer": "jest src/consumer/app.test.ts --coverage",
     "test:producer": "jest src/producer --coverage",
     "test:pact:verify": "jest src/producer/provider.pact.test.ts",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "start:consumer": "ts-node src/consumer/server.ts",
+    "test:all": "jest --coverage"
   },
   "keywords": [
     "pact",

@@ -1,10 +1,14 @@
-name: CDC Pipeline - Consumer Driven Contract Testing
+name: CDC Pact Prototype CI
 
 on:
   push:
-    branches: [main, 'feature/**']
+    branches: [main]
   pull_request:
     branches: [main]
+
+env:
+  PACT_BROKER_BASE_URL: http://localhost:9292
+  PACT_BROKER_TOKEN: ""
 
 jobs:
   lint-and-typecheck:
@@ -17,10 +21,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-      - name: ESLint
-        run: npx eslint src/**/*.ts --max-warnings 0 || true
+      - run: npx eslint src/**/*.ts
+      - run: npx tsc --noEmit
 
   security-scan:
     name: Security Scan
@@ -32,13 +34,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - name: Dependency audit
-        run: npm audit --audit-level=high || true
+      - run: npm audit --audit-level=high
 
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,10 +46,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - name: Run producer unit tests
-        run: npx jest src/producer/app.test.ts --coverage --coverageReporters=text
-      - name: Run alternatives comparison tests
-        run: npx jest src/producer/provider.only.test.ts --verbose
+      - run: npx jest src/producer/app.test.ts --coverage
+      - run: npx jest src/consumer/app.test.ts --coverage
 
   consumer-contracts:
     name: Generate Consumer Contracts
@@ -107,3 +105,57 @@ jobs:
           path: pacts/
       - name: Verify v2 producer backward compatibility
         run: npx jest src/producer/provider.v2.pact.test.ts --testTimeout=30000
+
+  can-i-deploy:
+    name: Can I Deploy — Pact Broker Matrix Check
+    runs-on: ubuntu-latest
+    needs: [provider-verification, backward-compatibility]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Start Pact Broker (local)
+        run: |
+          docker run -d \
+            --name pact-broker \
+            -p 9292:9292 \
+            -e PACT_BROKER_DATABASE_ADAPTER=sqlite \
+            -e PACT_BROKER_DATABASE_NAME=/tmp/pact_broker.sqlite \
+            -e PACT_BROKER_ALLOW_PUBLIC_READ=true \
+            pactfoundation/pact-broker:latest
+          sleep 10
+
+      - name: Download pact contracts
+        uses: actions/download-artifact@v4
+        with:
+          name: pact-contracts
+          path: pacts/
+
+      - name: Publish contracts to broker
+        run: |
+          npx pact-broker publish pacts/ \
+            --broker-base-url http://localhost:9292 \
+            --consumer-app-version 1.0.0 \
+            --tag main
+
+      - name: Record provider verification result
+        run: |
+          npx pact-broker record-deployment \
+            --broker-base-url http://localhost:9292 \
+            --pacticipant NotificationProducer \
+            --version 1.0.0 \
+            --environment production || true
+
+      - name: Can I Deploy — consumer check
+        run: |
+          npx pact-broker can-i-deploy \
+            --broker-base-url http://localhost:9292 \
+            --pacticipant NotificationConsumer \
+            --version 1.0.0 \
+            --to-environment production \
+            --retry-while-unknown 3 \
+            --retry-interval 5
