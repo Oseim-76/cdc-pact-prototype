@@ -4,6 +4,11 @@ import { NotificationClient } from './notification.client';
 
 const PRODUCER_URL = process.env.PRODUCER_URL ?? 'http://localhost:3001';
 
+interface AxiosError {
+  response?: { status: number };
+  message: string;
+}
+
 export function createConsumerApp(): Application {
   const app = express();
   const client = new NotificationClient(PRODUCER_URL);
@@ -56,8 +61,9 @@ export function createConsumerApp(): Application {
         consumedBy: 'notification-consumer',
         consumedAt: new Date().toISOString(),
       });
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
+    } catch (err) {
+      const axiosErr = err as AxiosError;
+      if (axiosErr?.response?.status === 404) {
         res.status(404).json({ error: 'Notification not found' });
         return;
       }
@@ -65,7 +71,7 @@ export function createConsumerApp(): Application {
     }
   });
 
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => { // eslint-disable-line @typescript-eslint/no-unused-vars
     console.error('Consumer error:', err.message);
     res.status(500).json({ error: 'Internal consumer error', message: err.message });
   });

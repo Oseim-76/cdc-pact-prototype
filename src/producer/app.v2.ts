@@ -9,18 +9,26 @@ const app: Application = express();
 app.use(cors());
 app.use(express.json());
 
-const notificationsV2 = [
+interface NotificationV2 {
+  id: string;
+  type: 'CASE_UPDATED' | 'CASE_CREATED' | 'CASE_CLOSED';
+  caseId: string;
+  status: string;
+  timestamp: string;
+  metadata: { source: string; version: string };
+  priority: string;
+  assignee: string;
+  tags: string[];
+}
+
+const notificationsV2: NotificationV2[] = [
   {
     id: 'notif-001',
     type: 'CASE_UPDATED',
     caseId: 'DFT-2024-001',
     status: 'IN_PROGRESS',
     timestamp: '2024-01-15T10:30:00Z',
-    metadata: {
-      source: 'dynamics-365',
-      version: '2.0.0',
-    },
-    // NEW optional fields in v2 - additive, non-breaking
+    metadata: { source: 'dynamics-365', version: '2.0.0' },
     priority: 'HIGH',
     assignee: 'john.smith@dft.gov.uk',
     tags: ['urgent', 'escalated'],
@@ -31,15 +39,23 @@ const notificationsV2 = [
     caseId: 'DFT-2024-002',
     status: 'OPEN',
     timestamp: '2024-01-15T11:00:00Z',
-    metadata: {
-      source: 'dynamics-365',
-      version: '2.0.0',
-    },
+    metadata: { source: 'dynamics-365', version: '2.0.0' },
     priority: 'MEDIUM',
     assignee: 'jane.doe@dft.gov.uk',
     tags: ['new-case'],
   },
 ];
+
+function toV1(n: NotificationV2) {
+  return {
+    id: n.id,
+    type: n.type,
+    caseId: n.caseId,
+    status: n.status,
+    timestamp: n.timestamp,
+    metadata: n.metadata,
+  };
+}
 
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -49,10 +65,8 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// V1 endpoints still supported (backward compatibility)
 app.get('/api/v1/notifications', (_req: Request, res: Response) => {
-  // Strip v2-only fields for v1 consumers
-  const v1Notifications = notificationsV2.map(({ priority: _p, assignee: _a, tags: _t, ...v1Fields }) => v1Fields);
+  const v1Notifications = notificationsV2.map(toV1);
   res.status(200).json({
     notifications: v1Notifications,
     total: v1Notifications.length,
@@ -66,11 +80,9 @@ app.get('/api/v1/notifications/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Notification not found' });
     return;
   }
-  const { priority: _p, assignee: _a, tags: _t, ...v1Fields } = notification; // eslint-disable-line @typescript-eslint/no-unused-vars
-  res.status(200).json(v1Fields);
+  res.status(200).json(toV1(notification));
 });
 
-// V2 endpoints with enriched schema
 app.get('/api/v2/notifications', (_req: Request, res: Response) => {
   res.status(200).json({
     notifications: notificationsV2,

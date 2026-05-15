@@ -17,7 +17,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx eslint src/**/*.ts
+      - run: npx eslint src/**/*.ts --max-warnings=0
       - run: npx tsc --noEmit
 
   security-scan:
@@ -115,6 +115,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+
       - name: Start Pact Broker
         run: |
           docker run -d \
@@ -124,28 +125,37 @@ jobs:
             -e PACT_BROKER_DATABASE_NAME=/tmp/pact_broker.sqlite \
             -e PACT_BROKER_ALLOW_PUBLIC_READ=true \
             pactfoundation/pact-broker:latest
-          sleep 10
+          sleep 20
+
       - name: Download pact contracts
         uses: actions/download-artifact@v4
         with:
           name: pact-contracts
           path: pacts/
+
+      - name: Install Pact standalone CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/pact-foundation/pact-ruby-standalone/master/install.sh | bash
+          echo "$HOME/.pact/bin" >> $GITHUB_PATH
+
       - name: Publish contracts to broker
         run: |
-          npx pact-broker publish pacts/ \
+          pact-broker publish pacts/ \
             --broker-base-url http://localhost:9292 \
             --consumer-app-version 1.0.0 \
             --tag main
+
       - name: Record provider verification
         run: |
-          npx pact-broker record-deployment \
+          pact-broker record-deployment \
             --broker-base-url http://localhost:9292 \
             --pacticipant NotificationProducer \
             --version 1.0.0 \
             --environment production || true
+
       - name: Can I Deploy — consumer check
         run: |
-          npx pact-broker can-i-deploy \
+          pact-broker can-i-deploy \
             --broker-base-url http://localhost:9292 \
             --pacticipant NotificationConsumer \
             --version 1.0.0 \
