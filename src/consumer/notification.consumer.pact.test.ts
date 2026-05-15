@@ -122,8 +122,9 @@ describe('Notification Consumer Pact Tests', () => {
               { headers: { Accept: 'application/json' } }
             );
           } catch (error) {
-            expect(error.response.status).toBe(404);
-            expect(error.response.data.error).toBeDefined();
+        const e = error as { response: { status: number; data: { error: string } } };
+        expect(e.response.status).toBe(404);
+        expect(e.response.data.error).toBeDefined();
           }
         });
     });
