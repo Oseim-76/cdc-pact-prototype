@@ -1,5 +1,5 @@
 import path from 'path';
-import { Verifier } from '@pact-foundation/pact';
+import { Verifier, VerifierOptions } from '@pact-foundation/pact';
 import { app } from './app';
 import { Server } from 'http';
 
@@ -25,29 +25,33 @@ describe('Pact Provider Verification', () => {
   });
 
   it('should validate the expectations of NotificationConsumer', async () => {
-    const verifierOptions = {
+    const baseOptions: VerifierOptions = {
       provider: 'NotificationProducer',
       providerBaseUrl: `http://localhost:${port}`,
       stateHandlers: {
-        'notifications exist': async () => {},
-        'notification notif-001 exists': async () => {},
-        'notification notif-999 does not exist': async () => {},
-        'producer is running': async () => {},
+        'notifications exist': async () => { return; },
+        'notification notif-001 exists': async () => { return; },
+        'notification notif-999 does not exist': async () => { return; },
+        'producer is running': async () => { return; },
       },
       logLevel: 'warn',
     };
 
-    if (USE_BROKER) {
-      verifierOptions.pactBrokerUrl = PACT_BROKER_URL;
-      verifierOptions.consumerVersionSelectors = [{ tag: 'main', latest: true }];
-      verifierOptions.publishVerificationResult = true;
-      verifierOptions.providerVersion = '1.0.0';
-      verifierOptions.providerVersionTags = ['main'];
-    } else {
-      verifierOptions.pactUrls = [
-        path.resolve(process.cwd(), 'pacts', 'NotificationConsumer-NotificationProducer.json'),
-      ];
-    }
+    const verifierOptions: VerifierOptions = USE_BROKER
+      ? {
+          ...baseOptions,
+          pactBrokerUrl: PACT_BROKER_URL,
+          consumerVersionSelectors: [{ tag: 'main', latest: true }],
+          publishVerificationResult: true,
+          providerVersion: '1.0.0',
+          providerVersionTags: ['main'],
+        }
+      : {
+          ...baseOptions,
+          pactUrls: [
+            path.resolve(process.cwd(), 'pacts', 'NotificationConsumer-NotificationProducer.json'),
+          ],
+        };
 
     const verifier = new Verifier(verifierOptions);
     await verifier.verifyProvider();
