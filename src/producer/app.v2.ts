@@ -52,7 +52,7 @@ app.get('/health', (_req: Request, res: Response) => {
 // V1 endpoints still supported (backward compatibility)
 app.get('/api/v1/notifications', (_req: Request, res: Response) => {
   // Strip v2-only fields for v1 consumers
-  const v1Notifications = notificationsV2.map(({ priority, assignee, tags, ...v1Fields }) => v1Fields);
+  const v1Notifications = notificationsV2.map(({ priority: _p, assignee: _a, tags: _t, ...v1Fields }) => v1Fields);
   res.status(200).json({
     notifications: v1Notifications,
     total: v1Notifications.length,
@@ -66,7 +66,7 @@ app.get('/api/v1/notifications/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Notification not found' });
     return;
   }
-  const { priority, assignee, tags, ...v1Fields } = notification;
+  const { priority: _priority, assignee: _assignee, tags: _tags, ...v1Fields } = notification;
   res.status(200).json(v1Fields);
 });
 
