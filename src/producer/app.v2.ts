@@ -66,7 +66,7 @@ app.get('/api/v1/notifications/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Notification not found' });
     return;
   }
-  const { priority: _priority, assignee: _assignee, tags: _tags, ...v1Fields } = notification;
+  const { priority: _p, assignee: _a, tags: _t, ...v1Fields } = notification; // eslint-disable-line @typescript-eslint/no-unused-vars
   res.status(200).json(v1Fields);
 });
 
