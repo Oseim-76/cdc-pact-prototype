@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  PACT_BROKER_BASE_URL: http://localhost:9292
-  PACT_BROKER_TOKEN: ""
-
 jobs:
   lint-and-typecheck:
     name: Lint & Type Check
@@ -46,8 +42,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx jest src/producer/app.test.ts --coverage
-      - run: npx jest src/consumer/app.test.ts --coverage
+      - name: Run producer unit tests with coverage
+        run: npx jest src/producer/app.test.ts --coverage --coverageThreshold='{"global":{"statements":80,"branches":80,"functions":80,"lines":80}}'
+      - name: Run consumer unit tests
+        run: npx jest src/consumer/app.test.ts --no-coverage
 
   consumer-contracts:
     name: Generate Consumer Contracts
@@ -117,8 +115,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-
-      - name: Start Pact Broker (local)
+      - name: Start Pact Broker
         run: |
           docker run -d \
             --name pact-broker \
@@ -128,28 +125,24 @@ jobs:
             -e PACT_BROKER_ALLOW_PUBLIC_READ=true \
             pactfoundation/pact-broker:latest
           sleep 10
-
       - name: Download pact contracts
         uses: actions/download-artifact@v4
         with:
           name: pact-contracts
           path: pacts/
-
       - name: Publish contracts to broker
         run: |
           npx pact-broker publish pacts/ \
             --broker-base-url http://localhost:9292 \
             --consumer-app-version 1.0.0 \
             --tag main
-
-      - name: Record provider verification result
+      - name: Record provider verification
         run: |
           npx pact-broker record-deployment \
             --broker-base-url http://localhost:9292 \
             --pacticipant NotificationProducer \
             --version 1.0.0 \
             --environment production || true
-
       - name: Can I Deploy — consumer check
         run: |
           npx pact-broker can-i-deploy \
