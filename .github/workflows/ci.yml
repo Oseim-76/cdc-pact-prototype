@@ -145,11 +145,37 @@ jobs:
             --consumer-app-version 1.0.0 \
             --tag main
 
-      - name: Record provider verification
+      - name: Run provider verification against broker
+        env:
+          PACT_BROKER_BASE_URL: http://localhost:9292
+        run: npx jest src/producer/provider.pact.test.ts --testTimeout=30000
+
+      - name: Record provider verification result
+        run: |
+          pact-broker record-provider-verification-results \
+            --broker-base-url http://localhost:9292 \
+            --pacticipant NotificationProducer \
+            --version 1.0.0 \
+            --success || \
+          pact-broker create-version-tag \
+            --broker-base-url http://localhost:9292 \
+            --pacticipant NotificationProducer \
+            --version 1.0.0 \
+            --tag main
+
+      - name: Record provider deployment
         run: |
           pact-broker record-deployment \
             --broker-base-url http://localhost:9292 \
             --pacticipant NotificationProducer \
+            --version 1.0.0 \
+            --environment production || true
+
+      - name: Record consumer deployment
+        run: |
+          pact-broker record-deployment \
+            --broker-base-url http://localhost:9292 \
+            --pacticipant NotificationConsumer \
             --version 1.0.0 \
             --environment production || true
 
@@ -160,5 +186,5 @@ jobs:
             --pacticipant NotificationConsumer \
             --version 1.0.0 \
             --to-environment production \
-            --retry-while-unknown 3 \
+            --retry-while-unknown 5 \
             --retry-interval 5
