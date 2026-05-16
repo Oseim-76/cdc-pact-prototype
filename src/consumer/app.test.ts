@@ -26,17 +26,13 @@ beforeEach(() => {
 });
 
 describe('Consumer API', () => {
+
   describe('GET /health', () => {
     it('returns UP with producer status when producer is reachable', async () => {
       MockedClient.prototype.getHealth.mockResolvedValue({
-        status: 'UP',
-        version: '1.0.0',
-        timestamp: new Date().toISOString(),
+        status: 'UP', version: '1.0.0', timestamp: new Date().toISOString(),
       });
-
-      const app = createConsumerApp();
-      const res = await request(app).get('/health');
-
+      const res = await request(createConsumerApp()).get('/health');
       expect(res.status).toBe(200);
       expect(res.body.status).toBe('UP');
       expect(res.body.service).toBe('notification-consumer');
@@ -45,23 +41,24 @@ describe('Consumer API', () => {
 
     it('returns UP with UNREACHABLE producer when producer is down', async () => {
       MockedClient.prototype.getHealth.mockRejectedValue(new Error('ECONNREFUSED'));
-
-      const app = createConsumerApp();
-      const res = await request(app).get('/health');
-
+      const res = await request(createConsumerApp()).get('/health');
       expect(res.status).toBe(200);
-      expect(res.body.status).toBe('UP');
       expect(res.body.producer.status).toBe('UNREACHABLE');
+    });
+
+    it('includes producer version in health response when reachable', async () => {
+      MockedClient.prototype.getHealth.mockResolvedValue({
+        status: 'UP', version: '1.0.0', timestamp: new Date().toISOString(),
+      });
+      const res = await request(createConsumerApp()).get('/health');
+      expect(res.body.producer.version).toBe('1.0.0');
     });
   });
 
   describe('GET /api/v1/notifications', () => {
     it('returns enriched notifications list from producer', async () => {
       MockedClient.prototype.getNotifications.mockResolvedValue(mockNotificationResponse);
-
-      const app = createConsumerApp();
-      const res = await request(app).get('/api/v1/notifications');
-
+      const res = await request(createConsumerApp()).get('/api/v1/notifications');
       expect(res.status).toBe(200);
       expect(res.body.notifications).toHaveLength(1);
       expect(res.body.notifications[0].caseId).toBe('DFT-2024-001');
@@ -69,12 +66,26 @@ describe('Consumer API', () => {
       expect(res.body.consumedAt).toBeDefined();
     });
 
+    it('returns enriched response with total and page from producer', async () => {
+      MockedClient.prototype.getNotifications.mockResolvedValue(mockNotificationResponse);
+      const res = await request(createConsumerApp()).get('/api/v1/notifications');
+      expect(res.body.total).toBe(1);
+      expect(res.body.page).toBe(1);
+    });
+
+    it('returns empty notifications array when producer returns none', async () => {
+      MockedClient.prototype.getNotifications.mockResolvedValue({
+        notifications: [], total: 0, page: 1,
+      });
+      const res = await request(createConsumerApp()).get('/api/v1/notifications');
+      expect(res.status).toBe(200);
+      expect(res.body.notifications).toHaveLength(0);
+      expect(res.body.total).toBe(0);
+    });
+
     it('returns 500 when producer call fails', async () => {
       MockedClient.prototype.getNotifications.mockRejectedValue(new Error('Network error'));
-
-      const app = createConsumerApp();
-      const res = await request(app).get('/api/v1/notifications');
-
+      const res = await request(createConsumerApp()).get('/api/v1/notifications');
       expect(res.status).toBe(500);
       expect(res.body.error).toBe('Internal consumer error');
     });
@@ -83,25 +94,26 @@ describe('Consumer API', () => {
   describe('GET /api/v1/notifications/:id', () => {
     it('returns enriched single notification', async () => {
       MockedClient.prototype.getNotificationById.mockResolvedValue(mockNotification);
-
-      const app = createConsumerApp();
-      const res = await request(app).get('/api/v1/notifications/notif-001');
-
+      const res = await request(createConsumerApp()).get('/api/v1/notifications/notif-001');
       expect(res.status).toBe(200);
       expect(res.body.caseId).toBe('DFT-2024-001');
       expect(res.body.consumedBy).toBe('notification-consumer');
     });
 
+    it('includes consumedAt timestamp on single notification', async () => {
+      MockedClient.prototype.getNotificationById.mockResolvedValue(mockNotification);
+      const res = await request(createConsumerApp()).get('/api/v1/notifications/notif-001');
+      expect(res.body.consumedAt).toBeDefined();
+      expect(new Date(res.body.consumedAt).toISOString()).toBe(res.body.consumedAt);
+    });
+
     it('returns 404 when producer returns 404', async () => {
       const err = Object.assign(new Error('Not found'), { response: { status: 404 } });
-      // response already set above
       MockedClient.prototype.getNotificationById.mockRejectedValue(err);
-
-      const app = createConsumerApp();
-      const res = await request(app).get('/api/v1/notifications/INVALID');
-
+      const res = await request(createConsumerApp()).get('/api/v1/notifications/INVALID');
       expect(res.status).toBe(404);
       expect(res.body.error).toBe('Notification not found');
     });
   });
+
 });

@@ -2,10 +2,10 @@ openapi: 3.0.3
 info:
   title: Notification Producer API
   description: |
-    RESTful API for the DfT Case Notification service. This specification serves as the 
+    RESTful API for the DfT Case Notification service. This specification serves as the
     canonical interface description for consumer-driven contract testing using Pact.js.
     All consumers must derive their Pact contracts from this specification.
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: Micheal Osei - Capgemini DfT Delivery Team
   license:
@@ -14,8 +14,8 @@ info:
 servers:
   - url: http://localhost:3001
     description: Local development server
-  - url: https://api.dft-notifications.capgemini.com/v1
-    description: Production (DfT estate - out of scope for prototype)
+  - url: https://notification-producer-93349648531.europe-west2.run.app
+    description: GCP Cloud Run production deployment (europe-west2)
 
 tags:
   - name: notifications
@@ -45,12 +45,36 @@ paths:
   /api/v1/notifications:
     get:
       tags: [notifications]
-      summary: List all notifications
+      summary: List notifications with optional filtering
       description: |
         Returns a paginated list of case notifications from the DfT Dynamics 365 estate.
+        Supports query parameter filtering by status, source, and type.
         Consumers must not depend on field ordering. New optional fields may be added
         in minor versions without constituting a breaking change.
       operationId: listNotifications
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter notifications by case status
+          schema:
+            type: string
+            example: OPEN
+        - name: source
+          in: query
+          required: false
+          description: Filter notifications by source system
+          schema:
+            type: string
+            example: dynamics-365
+        - name: type
+          in: query
+          required: false
+          description: Filter notifications by event type
+          schema:
+            type: string
+            enum: [CASE_UPDATED, CASE_CREATED, CASE_CLOSED]
+            example: CASE_UPDATED
       responses:
         '200':
           description: Successful response
@@ -95,6 +119,65 @@ paths:
               example:
                 error: Notification not found
 
+  /api/v2/notifications:
+    get:
+      tags: [notifications]
+      summary: List notifications (V2 — enriched schema)
+      description: |
+        V2 endpoint returning enriched notification objects with additional optional fields.
+        V1 consumer contracts remain valid — additive fields do not constitute breaking changes.
+        V1 endpoints preserved at /api/v1/* for backward compatibility.
+      operationId: listNotificationsV2
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: source
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponseV2'
+
+  /api/v2/notifications/{id}:
+    get:
+      tags: [notifications]
+      summary: Get notification by ID (V2 — enriched schema)
+      operationId: getNotificationByIdV2
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: notif-001
+      responses:
+        '200':
+          description: Notification found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationV2'
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     Notification:
@@ -103,28 +186,41 @@ components:
       properties:
         id:
           type: string
-          description: Unique notification identifier
           example: notif-001
         type:
           type: string
           enum: [CASE_UPDATED, CASE_CREATED, CASE_CLOSED]
-          description: Type of case event that triggered the notification
           example: CASE_UPDATED
         caseId:
           type: string
-          description: DfT case reference number
           example: DFT-2024-001
         status:
           type: string
-          description: Current status of the case
           example: IN_PROGRESS
         timestamp:
           type: string
           format: date-time
-          description: ISO 8601 timestamp of when the notification was created
           example: '2024-01-15T10:30:00Z'
         metadata:
           $ref: '#/components/schemas/NotificationMetadata'
+
+    NotificationV2:
+      allOf:
+        - $ref: '#/components/schemas/Notification'
+        - type: object
+          properties:
+            priority:
+              type: string
+              enum: [HIGH, MEDIUM, LOW]
+              example: HIGH
+            assignee:
+              type: string
+              example: john.smith@dft.gov.uk
+            tags:
+              type: array
+              items:
+                type: string
+              example: [urgent, escalated]
 
     NotificationMetadata:
       type: object
@@ -132,11 +228,9 @@ components:
       properties:
         source:
           type: string
-          description: System that generated the notification
           example: dynamics-365
         version:
           type: string
-          description: API version that produced this notification
           example: 1.0.0
 
     NotificationListResponse:
@@ -149,12 +243,26 @@ components:
             $ref: '#/components/schemas/Notification'
         total:
           type: integer
-          description: Total number of notifications
           example: 2
         page:
           type: integer
-          description: Current page number
           example: 1
+
+    NotificationListResponseV2:
+      type: object
+      required: [notifications, total, page]
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationV2'
+        total:
+          type: integer
+        page:
+          type: integer
+        version:
+          type: string
+          example: 2.0.0
 
     HealthResponse:
       type: object
@@ -170,7 +278,6 @@ components:
         timestamp:
           type: string
           format: date-time
-          example: '2024-01-15T10:30:00Z'
 
     ErrorResponse:
       type: object

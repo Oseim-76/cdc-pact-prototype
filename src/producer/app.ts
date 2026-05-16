@@ -40,10 +40,24 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json(response);
 });
 
-app.get('/api/v1/notifications', (_req: Request, res: Response) => {
+app.get('/api/v1/notifications', (req: Request, res: Response) => {
+  const { status, source, type } = req.query;
+
+  let filtered = notifications;
+
+  if (status && typeof status === 'string') {
+    filtered = filtered.filter((n) => n.status === status);
+  }
+  if (source && typeof source === 'string') {
+    filtered = filtered.filter((n) => n.metadata.source === source);
+  }
+  if (type && typeof type === 'string') {
+    filtered = filtered.filter((n) => n.type === type);
+  }
+
   const response: NotificationResponse = {
-    notifications,
-    total: notifications.length,
+    notifications: filtered,
+    total: filtered.length,
     page: 1,
   };
   res.status(200).json(response);
